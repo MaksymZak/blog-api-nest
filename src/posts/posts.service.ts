@@ -1,45 +1,48 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Post } from './entities/post.entity';
 import { UsersService } from 'src/users/users.service';
-
-export interface Post {
-  id: number;
-  title: string;
-  body: string;
-  authorId: number;
-}
+import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly usersService: UsersService) {}
-  private posts: Post[] = [];
-  private nextId = 1;
+  constructor(
+    // Дженерик Repository<Post> стирается при компиляции — в design:paramtypes
+    // попадёт просто Repository. Поэтому токен указываем явно.
+    @InjectRepository(Post)
+    private readonly postsRepository: Repository<Post>,
+    private readonly usersService: UsersService,
+  ) {}
 
-  create(data: Omit<Post, 'id'>): Post {
-    this.usersService.findOne(data.authorId); // бросит 404, если автора нет
-    const post = { id: this.nextId++, ...data };
-    this.posts.push(post);
-    return post;
+  findAll(): Promise<Post[]> {
+    return this.postsRepository.find();
   }
 
-  findAll(): Post[] {
-    return this.posts;
-  }
-
-  findOne(id: number): Post {
-    const post = this.posts.find((p) => p.id === id);
+  async findOne(id: number): Promise<Post> {
+    const post = await this.postsRepository.findOne({ where: { id } });
     if (!post) throw new NotFoundException(`Пост ${id} не найден`);
     return post;
   }
 
-  update(id: number, data: Partial<Omit<Post, 'id'>>): Post {
-    const post = this.findOne(id); // findOne сам бросит 404, если не найден
-    Object.assign(post, data);
-    return post;
+  async create(dto: CreatePostDto): Promise<Post> {
+    this.usersService.findOne(dto.authorId); // бросит 404, если автора нет
+
+    const post = this.postsRepository.create(dto); // только создаёт объект
+    return this.postsRepository.save(post); // а вот это пишет в базу
   }
 
-  remove(id: number): void {
-    const index = this.posts.findIndex((p) => p.id === id);
-    if (index === -1) throw new NotFoundException(`Пост ${id} не найден`);
-    this.posts.splice(index, 1);
+  async update(id: number, dto: UpdatePostDto): Promise<Post> {
+    const post = await this.findOne(id); // findOne сам бросит 404
+    Object.assign(post, dto);
+    return this.postsRepository.save(post);
+  }
+
+  async remove(id: number): Promise<void> {
+    const result = await this.postsRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Пост ${id} не найден`);
+    }
   }
 }

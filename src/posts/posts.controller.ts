@@ -38,6 +38,8 @@ export class PostsController {
   @Delete(':id')
   @HttpCode(204)
   remove(@Param('id') id: string) {
-    this.postsService.remove(+id);
+    // return обязателен: сервис теперь возвращает Promise, и без return
+    // Nest не дождётся удаления и не увидит 404, если поста нет
+    return this.postsService.remove(+id);
   }
 }
