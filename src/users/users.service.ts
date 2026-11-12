@@ -1,24 +1,24 @@
-import { Injectable, NotFoundException, Param } from '@nestjs/common';
-
-export interface User {
-  id: number;
-  name: string;
-}
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [
-    { id: 1, name: 'Anna' },
-    { id: 2, name: 'Bob' },
-  ];
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
+  ) {}
 
-  findOne(@Param('id') id: number): User {
-    const user = this.users.find((u) => u.id === id);
-    if (!user) throw new NotFoundException(`Пользователь ${id} не найден`);
-    return user;
+  findAll(): Promise<User[]> {
+    return this.usersRepository.find();
   }
 
-  findAll(): User[] {
-    return this.users;
+  async findOne(id: number): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`Пользователь ${id} не найден`);
+    }
+    return user;
   }
 }

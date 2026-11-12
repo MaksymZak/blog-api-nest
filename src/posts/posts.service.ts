@@ -27,7 +27,7 @@ export class PostsService {
   }
 
   async create(dto: CreatePostDto): Promise<Post> {
-    this.usersService.findOne(dto.authorId); // бросит 404, если автора нет
+    await this.usersService.findOne(dto.authorId); // бросит 404, если автора нет
 
     const post = this.postsRepository.create(dto); // только создаёт объект
     return this.postsRepository.save(post); // а вот это пишет в базу
