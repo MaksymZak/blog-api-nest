@@ -1,5 +1,5 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 import {
   FastifyAdapter,
   type NestFastifyApplication,
@@ -19,6 +19,10 @@ async function bootstrap() {
       transform: true, // привести типы: '42' → 42
     }),
   );
+
+  // Перед отправкой JSON прогоняет ответ через instanceToPlain:
+  // поля с @Exclude() (passwordHash) в клиент не попадают.
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }

@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 
 /**
  * Описание таблицы `users` в виде класса.
@@ -24,6 +25,10 @@ export class User {
 
   @Column({ nullable: true, length: 500 })
   bio: string;
+
+  @Exclude() // что это значит — разберём после эксперимента
+  @Column({ name: 'password_hash', default: '' })
+  passwordHash: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
