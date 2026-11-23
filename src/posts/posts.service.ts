@@ -16,8 +16,14 @@ export class PostsService {
     private readonly usersService: UsersService,
   ) {}
 
-  findAll(): Promise<Post[]> {
-    return this.postsRepository.find();
+  async findAll(): Promise<Post[]> {
+    const posts = await this.postsRepository.find({
+      relations: {
+        author: true,
+      },
+    });
+
+    return posts;
   }
 
   async findOne(id: number): Promise<Post> {
